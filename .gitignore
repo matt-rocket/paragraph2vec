@@ -44,3 +44,5 @@ Temporary Items
 
 # Project specific
 .idea
+data/*
+*.pyc
