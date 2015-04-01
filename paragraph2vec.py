@@ -86,6 +86,16 @@ class CBOW(object):
         return y
 
 
+def sentence2contexts(tokens, window):
+    context_pairs = []
+    for i, t in enumerate(tokens):
+        left_context = tokens[max(0, i-window):max(0, i)]
+        right_context = tokens[(i+1):(i+window+1)]
+        context = left_context + right_context
+        context_pairs.append((t, context))
+    return context_pairs
+
+
 def softmax(x):
     numerator = np.exp(x)
     denominator = np.sum(numerator, 0)
@@ -95,13 +105,13 @@ def softmax(x):
 if __name__ == "__main__":
     stream = SentenceStream()
     encoder = Encoder(sentences=stream)
-    cbow_p2v = CBOW(stream,  context=2, )
+    cbow_p2v = CBOW(stream,  context=2)
     context_words = ['the', 'are']
     context_onehot = [encoder.word2onehot(w) for w in context_words]  # [np.mat([0, 1, 0]).T, np.mat([0, 0, 1]).T]
     word = 'is'
     word_onehot = encoder.word2onehot(word)  # np.mat([1, 0, 0]).T
 
-    for i in range(10000):
+    for i in range(10):
         cbow_p2v._train(word_onehot, context_onehot)
         print encoder.onehot2word(cbow_p2v.predict(context_onehot))
 
