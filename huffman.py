@@ -1,36 +1,47 @@
 __author__ = 'Matias'
 
 from collections import Counter
-import heapq
+from heapq import heappop, heappush, heapify
+from itertools import count
 
 
 class Node(object):
-    def __init__(self, pairs, frequency):
-        self.pairs = pairs
-        self.frequency = frequency
+    _ids = count(0)
 
-    def __repr__(self):
-        return repr(self.pairs) + ", " + repr(self.frequency)
+    def __init__(self, freq, word=None, left=None, right=None):
+        self.id = self._ids.next() if word is None else None
+        self.word = word
+        self.left = left
+        self.right = right
+        self.freq = freq
 
-    def merge(self, other):
-        total_frequency = self.frequency + other.frequency
-        for p in self.pairs:
-            p[1] = "1" + p[1]
-        for p in other.pairs:
-            p[1] = "0" + p[1]
-        new_pairs = self.pairs + other.pairs
-        return Node(new_pairs, total_frequency)
-
-    def __lt__(self, other):
-        return self.frequency < other.frequency
+    def __cmp__(self, other):
+        if self.freq > other.freq:
+            return 1
+        elif self.freq < other.freq:
+            return -1
+        else:
+            return 0
 
 
-def huffman_codes(s):
-    table = [Node([[ch, '']], freq) for ch, freq in Counter(s).items()]
-    heapq.heapify(table)
-    while len(table) > 1:
-        first_node = heapq.heappop(table)
-        second_node = heapq.heappop(table)
-        new_node = first_node.merge(second_node)
-        heapq.heappush(table, new_node)
-    return dict(table[0].pairs)
+def build_huffman_tree(counts):
+    nodes = [Node(freq=b, word=a) for a, b in counts.iteritems()]
+    heapify(nodes)
+    while len(nodes) > 2:
+        left = heappop(nodes)
+        right = heappop(nodes)
+        new_node = Node(freq=left.freq+right.freq, left=left, right=right)
+        heappush(nodes, new_node)
+    left = nodes[0]
+    right = nodes[1]
+    root = Node(freq=left.freq+right.freq, left=left, right=right)
+    return root
+
+
+def huffman_codes(tree):
+    pass
+
+
+if __name__ == "__main__":
+    word_counts = Counter([1,2,4,2,1,4,3,1,3,5,3,2,4,2,2,2,2,2,2,2,9])
+    tree = build_huffman_tree(word_counts)

@@ -2,8 +2,9 @@ __author__ = 'Matias'
 
 import numpy as np
 from encoding import Encoder, SentenceStream
+import logging
 
-
+"""
 class NeuralNetworkLanguageModel(object):
 
     def __init__(self, context=1, encoding_length=3, cbow=True, concat=True):
@@ -36,19 +37,33 @@ class NeuralNetworkLanguageModel(object):
         h, y = self._forward_pass(x)
         alpha = 0.1
         self._backprop(x, t, y, h, alpha)
+"""
 
 
 class CBOW(object):
 
-    def __init__(self, sentences, context=1, concat=False):
+    def __init__(self, sentences, context=1, hidden=5, concat=False, limit=1000):
+        logging.info(msg="starting CBOW training..")
         self.context = context
         self.encoder = Encoder(sentences=sentences)
         self.encoding_length = self.encoder.encoding_length
-        self.hidden_units = 5
+        self.hidden_units = hidden
         self.output_units = 1
         self.input_units = context if concat else 1
         self.input2hidden = np.random.rand(self.hidden_units, self.input_units*self.encoding_length)*0.1
         self.hidden2output = np.random.rand(self.output_units*self.encoding_length, self.hidden_units)*0.1
+
+        # train model
+        word_count = 0
+        for sentence in sentences:
+            context_pairs = sentence2contexts(sentence, self.context)
+            for w, c in context_pairs:
+                self._train(w, c)
+                word_count += 1
+                if word_count % 100 == 0:
+                    logging.info(msg="trained on %s words" % (word_count,))
+            if word_count > limit:
+                break
 
     def _forward_pass(self, x):
         h = (1.0/self.context) * self.input2hidden * x
@@ -67,8 +82,8 @@ class CBOW(object):
         self.input2hidden -= 1.0/self.context*alpha*dEdw
 
     def _train(self, word, context):
-        onehot_context = context  # [self.encoder.word2onehot(w) for w in context]
-        onehot_word = word  # self.encoder.word2onehot(word)
+        onehot_context = [self.encoder.word2onehot(w) for w in context]
+        onehot_word = self.encoder.word2onehot(word)
         t = onehot_word
         x = np.zeros_like(onehot_word)
         for c in onehot_context:
@@ -78,12 +93,17 @@ class CBOW(object):
         self._backprop(x, t, y, h, alpha)
 
     def predict(self, context):
-        onehot_context = context  # [self.encoder.word2onehot(w) for w in context]
+        onehot_context = [self.encoder.word2onehot(w) for w in context]
         x = np.zeros_like(onehot_context[0])
         for c in onehot_context:
             x += c
         _, y = self._forward_pass(x)
         return y
+
+    def __getitem__(self, word):
+        onehot_word = self.encoder.word2onehot(word)
+        return self.input2hidden*onehot_word
+
 
 
 def sentence2contexts(tokens, window):
@@ -103,15 +123,8 @@ def softmax(x):
 
 
 if __name__ == "__main__":
+    # setup logging
+    logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+
     stream = SentenceStream()
-    encoder = Encoder(sentences=stream)
-    cbow_p2v = CBOW(stream,  context=2)
-    context_words = ['the', 'are']
-    context_onehot = [encoder.word2onehot(w) for w in context_words]  # [np.mat([0, 1, 0]).T, np.mat([0, 0, 1]).T]
-    word = 'is'
-    word_onehot = encoder.word2onehot(word)  # np.mat([1, 0, 0]).T
-
-    for i in range(10):
-        cbow_p2v._train(word_onehot, context_onehot)
-        print encoder.onehot2word(cbow_p2v.predict(context_onehot))
-
+    cbow_p2v = CBOW(stream,  context=1, hidden=20)
