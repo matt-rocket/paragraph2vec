@@ -25,10 +25,10 @@ class Node(object):
 
 
 class HuffmanEncoder(object):
+
     def __init__(self, word_counts):
         self.tree = self.build_huffman_tree(word_counts)
         self.encodings = self.huffman_codes(self.tree)
-
 
     def build_huffman_tree(self, counts):
         nodes = [Node(freq=b, word=a) for a, b in counts.iteritems()]
@@ -63,6 +63,9 @@ class HuffmanEncoder(object):
             ids.append(tree.id)
             tree = tree.left if bit == "1" else tree.right
         return ids
+
+    def get_code(self, word):
+        return self.encodings[word]
 
 
 if __name__ == "__main__":

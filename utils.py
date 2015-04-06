@@ -57,7 +57,7 @@ class SentenceStream(object):
                     count += 1
                     sentence_tokens = word_tokenize(sentence)
                     yield sentence_tokens
-                    if self.is_test and count > 1:
+                    if self.is_test and count > 1000:
                         break
 
 
